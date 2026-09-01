@@ -1,5 +1,5 @@
 #include "quick_sort.h" // Trae la declaración de quickSort() Para que el compilador verifique que esta definición confirme con la firma del .h
-    int partition(std::vector<std::string>& v, int inicio, int fin) // Partiition reorganiza v, de inicio a fin , alrededor de un piivote:,todo lo menor queda a la izquierda,todo mayor a la derecha y devuelve la posicion de donde quedo el pivote
+    int partition(std::vector<std::string>& v, int inicio, int fin) // Partition reorganiza v, de inicio a fin , alrededor de un piivote:,todo lo menor queda a la izquierda,todo mayor a la derecha y devuelve la posicion de donde quedo el pivote
     {
         std::string pivote= v[fin]; // Hacemos una copia del ultmo elemento del rango actual [inicio,fin] como pivote de referencia, se copia,no lo referenciamos, pa que no cambie si  luego movemos elementos
         int i = inicio-1; // i marca el limite de la región de elemtnos ya confirmados menores al pivote,arranca en iinicio-1 porque esa parte empieza vacia
