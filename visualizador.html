@@ -1,0 +1,834 @@
+<title>QuickSort · HeapSort · AVL</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+  :root{
+    --bg:#eef0ec; --surface:#ffffff; --surface-2:#f7f8f5; --ink:#171a1f; --ink-dim:#5b6460;
+    --border:#d7ddd6; --border-strong:#c3cbc1;
+    --accent:#1f9c92; --accent-ink:#ffffff;
+    --scan:#6f5bd6; --scan-ink:#ffffff;
+    --pivot:#c8842a; --pivot-ink:#ffffff;
+    --danger:#c94f3d; --danger-ink:#ffffff;
+    --fixed:#3f8f60; --fixed-ink:#ffffff;
+    --shadow: 0 1px 2px rgba(20,24,20,.06), 0 6px 20px -8px rgba(20,24,20,.18);
+    --font-ui:'IBM Plex Sans',system-ui,-apple-system,sans-serif;
+    --font-mono:'IBM Plex Mono',ui-monospace,SFMono-Regular,Consolas,monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#10141b; --surface:#1a2029; --surface-2:#151a22; --ink:#dfe4ea; --ink-dim:#8b95a0;
+      --border:#2a323d; --border-strong:#39434f;
+      --accent:#3fd0c4; --accent-ink:#08211f;
+      --scan:#b1a0f0; --scan-ink:#221a45;
+      --pivot:#f0b95a; --pivot-ink:#3a2604;
+      --danger:#ef7263; --danger-ink:#3a0f09;
+      --fixed:#5fb37f; --fixed-ink:#07281a;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 6px 24px -8px rgba(0,0,0,.5);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#10141b; --surface:#1a2029; --surface-2:#151a22; --ink:#dfe4ea; --ink-dim:#8b95a0;
+    --border:#2a323d; --border-strong:#39434f;
+    --accent:#3fd0c4; --accent-ink:#08211f;
+    --scan:#b1a0f0; --scan-ink:#221a45;
+    --pivot:#f0b95a; --pivot-ink:#3a2604;
+    --danger:#ef7263; --danger-ink:#3a0f09;
+    --fixed:#5fb37f; --fixed-ink:#07281a;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 6px 24px -8px rgba(0,0,0,.5);
+  }
+
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-ui);}
+  .wrap{max-width:1180px;margin:0 auto;padding:28px 20px 80px;}
+
+  header.top{display:flex;flex-direction:column;gap:4px;margin-bottom:20px;}
+  header.top h1{font-size:22px;font-weight:700;margin:0;letter-spacing:-.01em;}
+  header.top p{margin:0;color:var(--ink-dim);font-size:13.5px;max-width:62ch;}
+
+  nav.tabs{display:flex;gap:2px;margin:22px 0 0;border-bottom:1px solid var(--border);}
+  nav.tabs button{
+    font-family:var(--font-mono);font-size:13px;font-weight:500;color:var(--ink-dim);
+    background:transparent;border:1px solid transparent;border-bottom:none;
+    padding:9px 16px 8px;border-radius:8px 8px 0 0;cursor:pointer;
+    display:flex;align-items:center;gap:7px;position:relative;top:1px;
+  }
+  nav.tabs button .dot{width:7px;height:7px;border-radius:50%;background:var(--border-strong);}
+  nav.tabs button[aria-selected="true"]{
+    color:var(--ink);background:var(--surface);border-color:var(--border);border-bottom-color:var(--surface);
+  }
+  nav.tabs button[data-scene="quick"][aria-selected="true"] .dot{background:var(--accent);}
+  nav.tabs button[data-scene="heap"][aria-selected="true"] .dot{background:var(--pivot);}
+  nav.tabs button[data-scene="avl"][aria-selected="true"] .dot{background:var(--scan);}
+  nav.tabs button:hover{color:var(--ink);}
+  nav.tabs button:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+
+  .scene{background:var(--surface);border:1px solid var(--border);border-radius:0 10px 10px 10px;box-shadow:var(--shadow);}
+  .scene[hidden]{display:none;}
+
+  .toolbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--border);background:var(--surface-2);border-radius:0 10px 0 0;}
+  .toolbar .lede{font-size:12.5px;color:var(--ink-dim);margin-right:auto;}
+  .toolbar form{display:flex;align-items:center;gap:6px;}
+  .toolbar input[type=text]{
+    font-family:var(--font-mono);font-size:12.5px;padding:6px 9px;border-radius:6px;
+    border:1px solid var(--border-strong);background:var(--surface);color:var(--ink);width:min(320px,42vw);
+  }
+  .toolbar input[type=text]:focus-visible{outline:2px solid var(--accent);outline-offset:1px;}
+  .btn{font-family:var(--font-ui);font-size:12.5px;font-weight:600;padding:6px 12px;border-radius:6px;border:1px solid var(--border-strong);background:var(--surface);color:var(--ink);cursor:pointer;}
+  .btn:hover{border-color:var(--accent);color:var(--accent);}
+  .btn:focus-visible{outline:2px solid var(--accent);outline-offset:1px;}
+  .btn.ghost{border-color:transparent;background:transparent;color:var(--ink-dim);}
+  .btn.ghost:hover{color:var(--ink);text-decoration:underline;}
+  .warn{font-size:12px;color:var(--danger);}
+
+  .grid{display:grid;grid-template-columns:300px 1fr;gap:0;}
+  @media (max-width:820px){.grid{grid-template-columns:1fr;}}
+
+  .pane-code{padding:16px 16px 18px;border-right:1px solid var(--border);}
+  @media (max-width:820px){.pane-code{border-right:none;border-bottom:1px solid var(--border);}}
+  .pane-code h3{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-dim);margin:0 0 10px;font-weight:600;}
+  pre.code{
+    font-family:var(--font-mono);font-size:12.3px;line-height:1.65;margin:0;white-space:pre-wrap;word-break:break-word;
+  }
+  pre.code .ln{display:block;padding:1.5px 6px;border-radius:4px;color:var(--ink);}
+  pre.code .ln.dim{color:var(--ink-dim);}
+  pre.code .ln.active{background:var(--accent);color:var(--accent-ink);}
+
+  .stats{display:flex;gap:14px;margin-top:16px;padding-top:14px;border-top:1px solid var(--border);}
+  .stat{display:flex;flex-direction:column;gap:2px;}
+  .stat b{font-size:18px;font-variant-numeric:tabular-nums;font-family:var(--font-mono);}
+  .stat span{font-size:10.5px;color:var(--ink-dim);text-transform:uppercase;letter-spacing:.06em;}
+
+  .legend{display:flex;flex-wrap:wrap;gap:8px 14px;margin-top:14px;}
+  .legend .item{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--ink-dim);}
+  .legend .sw{width:10px;height:10px;border-radius:3px;flex:none;}
+
+  .pane-stage{padding:18px 20px 20px;min-height:420px;display:flex;flex-direction:column;}
+  .phase-chip{align-self:flex-start;font-family:var(--font-mono);font-size:11px;font-weight:600;padding:3px 9px;border-radius:999px;background:var(--surface-2);border:1px solid var(--border);color:var(--ink-dim);margin-bottom:14px;}
+
+  .stage{flex:1;display:flex;flex-direction:column;justify-content:center;gap:22px;min-height:180px;}
+
+  .row-cells{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;}
+  .cell{
+    position:relative;font-family:var(--font-mono);font-size:13px;font-weight:500;
+    padding:11px 13px;border-radius:9px;border:1.5px solid var(--border-strong);background:var(--surface);color:var(--ink);
+    transition:background-color .18s,border-color .18s,color .18s,opacity .18s,transform .18s;
+  }
+  .cell .idx{position:absolute;bottom:-16px;left:0;right:0;text-align:center;font-size:9px;color:var(--ink-dim);}
+  .cell.outside{opacity:.35;}
+  .cell.fixed{background:var(--fixed);border-color:var(--fixed);color:var(--fixed-ink);}
+  .cell.is-pivot{border-color:var(--pivot);box-shadow:0 0 0 2px color-mix(in srgb, var(--pivot) 35%, transparent);}
+  .cell.is-swap{background:var(--danger);border-color:var(--danger);color:var(--danger-ink);transform:translateY(-2px);}
+  .badge{position:absolute;top:-11px;font-size:9.5px;font-weight:700;padding:1px 5px;border-radius:999px;letter-spacing:.02em;}
+  .badge.b-i{left:-6px;background:var(--accent);color:var(--accent-ink);}
+  .badge.b-j{right:-6px;background:var(--scan);color:var(--scan-ink);}
+  .badge.b-piv{left:50%;transform:translateX(-50%);top:-22px;background:var(--pivot);color:var(--pivot-ink);}
+
+  .tree-wrap{display:flex;justify-content:center;}
+  svg.tree{max-width:100%;height:auto;overflow:visible;}
+  svg.tree text{font-family:var(--font-mono);}
+  svg.tree .edge{stroke:var(--border-strong);stroke-width:1.5;fill:none;}
+  svg.tree .node rect{fill:var(--surface);stroke:var(--border-strong);stroke-width:1.5;}
+  svg.tree .node text.val{fill:var(--ink);font-size:12px;font-weight:500;}
+  svg.tree .node text.meta{fill:var(--ink-dim);font-size:8.5px;}
+  svg.tree .node.focus rect{stroke:var(--accent);stroke-width:2.5;}
+  svg.tree .node.mayor rect{stroke:var(--accent);stroke-width:2.5;}
+  svg.tree .node.child rect{stroke:var(--scan);stroke-width:2;}
+  svg.tree .node.pivotlike rect{stroke:var(--pivot);stroke-width:2.5;}
+  svg.tree .node.swap rect{fill:var(--danger);stroke:var(--danger);}
+  svg.tree .node.swap text{fill:var(--danger-ink);}
+  svg.tree .node.new rect{stroke:var(--pivot);stroke-width:2.5;stroke-dasharray:3 2;}
+  svg.tree .node.done rect{opacity:.4;}
+  svg.tree .edge.done{opacity:.25;}
+
+  .narration{
+    display:flex;gap:10px;align-items:flex-start;padding:12px 14px;border-radius:9px;
+    background:var(--surface-2);border:1px solid var(--border);font-size:13.2px;line-height:1.5;min-height:20px;
+  }
+  .narration .glyph{flex:none;width:7px;height:7px;border-radius:50%;background:var(--accent);margin-top:6px;}
+
+  .transport{display:flex;align-items:center;gap:10px;margin-top:16px;flex-wrap:wrap;}
+  .transport .tbtn{
+    width:34px;height:34px;border-radius:8px;border:1px solid var(--border-strong);background:var(--surface);
+    color:var(--ink);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;
+  }
+  .transport .tbtn:hover{border-color:var(--accent);color:var(--accent);}
+  .transport .tbtn:focus-visible{outline:2px solid var(--accent);outline-offset:1px;}
+  .transport .tbtn.play{width:44px;background:var(--accent);border-color:var(--accent);color:var(--accent-ink);}
+  .transport .progress{flex:1;min-width:120px;display:flex;flex-direction:column;gap:4px;}
+  .transport input[type=range]{width:100%;accent-color:var(--accent);}
+  .transport .count{font-family:var(--font-mono);font-size:11px;color:var(--ink-dim);font-variant-numeric:tabular-nums;}
+  .transport .speed{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--ink-dim);}
+  .transport .speed input{width:70px;accent-color:var(--accent);}
+
+  footer.note{margin-top:18px;font-size:11.5px;color:var(--ink-dim);text-align:center;}
+
+  @media (prefers-reduced-motion: reduce){
+    .cell,svg.tree *{transition:none !important;}
+  }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <h1>QuickSort · HeapSort · AVL</h1>
+    <p>Cada paso corre la misma lógica que tu código C++: partición de Lomuto con pivote al final, heapify con <code>mayor/izquierda/derecha</code>, e inserción AVL con los 4 casos de rotación. Usa un arreglo pequeño para poder seguir cada comparación con calma — la idea es que puedas explicar cualquier paso, no solo verlo pasar.</p>
+  </header>
+
+  <nav class="tabs" role="tablist">
+    <button role="tab" data-scene="quick" aria-selected="true"><span class="dot"></span>quick_sort.cpp</button>
+    <button role="tab" data-scene="heap" aria-selected="false"><span class="dot"></span>heap_sort.cpp</button>
+    <button role="tab" data-scene="avl" aria-selected="false"><span class="dot"></span>avl_tree.cpp</button>
+  </nav>
+
+  <!-- ===================== QUICKSORT ===================== -->
+  <section class="scene" id="scene-quick" data-scene="quick">
+    <div class="toolbar">
+      <span class="lede">Partición de Lomuto — pivote = último elemento del rango</span>
+      <form data-role="custom-form">
+        <input type="text" data-role="custom-input" placeholder="palabra1, palabra2, palabra3...">
+        <button type="submit" class="btn">Generar</button>
+      </form>
+      <button class="btn ghost" data-role="reset-default">usar ejemplo</button>
+    </div>
+    <div class="grid">
+      <div class="pane-code">
+        <h3>partition() / quickSortRec()</h3>
+        <pre class="code" data-role="pseudocode">
+<span class="ln" data-line="pivote">pivote = v[fin]</span>
+<span class="ln dim">i = inicio - 1</span>
+<span class="ln" data-line="ifcond">para j = inicio .. fin-1:</span>
+<span class="ln" data-line="ifcond">  si v[j] &lt; pivote:</span>
+<span class="ln" data-line="swap">    i++; swap(v[i], v[j])</span>
+<span class="ln" data-line="placepivot">swap(v[i+1], v[fin])</span>
+<span class="ln dim">return i+1  // posición final del pivote</span>
+<span class="ln dim">--</span>
+<span class="ln dim">quickSortRec(v, inicio, fin):</span>
+<span class="ln" data-line="base">  si inicio &gt;= fin: return</span>
+<span class="ln dim">  p = partition(v, inicio, fin)</span>
+<span class="ln dim">  quickSortRec(v, inicio, p-1)</span>
+<span class="ln dim">  quickSortRec(v, p+1, fin)</span>
+        </pre>
+        <div class="stats">
+          <div class="stat"><b data-role="stat-cmp">0</b><span>comparaciones</span></div>
+          <div class="stat"><b data-role="stat-swap">0</b><span>swaps</span></div>
+        </div>
+        <div class="legend">
+          <div class="item"><span class="sw" style="background:var(--pivot)"></span>pivote</div>
+          <div class="item"><span class="sw" style="background:var(--accent)"></span>i</div>
+          <div class="item"><span class="sw" style="background:var(--scan)"></span>j</div>
+          <div class="item"><span class="sw" style="background:var(--danger)"></span>swap</div>
+          <div class="item"><span class="sw" style="background:var(--fixed)"></span>posición fija</div>
+        </div>
+      </div>
+      <div class="pane-stage">
+        <span class="phase-chip" data-role="phase">—</span>
+        <div class="stage">
+          <div class="row-cells" data-role="cells"></div>
+        </div>
+        <div class="narration"><span class="glyph"></span><span data-role="narration">—</span></div>
+        <div class="transport" data-role="transport"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== HEAPSORT ===================== -->
+  <section class="scene" id="scene-heap" data-scene="heap" hidden>
+    <div class="toolbar">
+      <span class="lede">Heap máximo construido en el propio arreglo, luego extracción repetida de la raíz</span>
+      <form data-role="custom-form">
+        <input type="text" data-role="custom-input" placeholder="palabra1, palabra2, palabra3...">
+        <button type="submit" class="btn">Generar</button>
+      </form>
+      <button class="btn ghost" data-role="reset-default">usar ejemplo</button>
+    </div>
+    <div class="grid">
+      <div class="pane-code">
+        <h3>heapify() / heapSort()</h3>
+        <pre class="code" data-role="pseudocode">
+<span class="ln dim">heapify(v, n, i):</span>
+<span class="ln" data-line="enter">  mayor = i; izq = 2i+1; der = 2i+2</span>
+<span class="ln" data-line="cmpL">  si v[izq] &gt; v[mayor]: mayor = izq</span>
+<span class="ln" data-line="cmpR">  si v[der] &gt; v[mayor]: mayor = der</span>
+<span class="ln" data-line="swap">  si mayor != i: swap(v[i],v[mayor])</span>
+<span class="ln dim">              heapify(v, n, mayor)</span>
+<span class="ln" data-line="ok">  si no: esta rama ya es válida</span>
+<span class="ln dim">--</span>
+<span class="ln dim">heapSort(v):</span>
+<span class="ln" data-line="buildstart">  para i = n/2-1 .. 0: heapify(v,n,i)</span>
+<span class="ln" data-line="extractswap">  para i = n-1 .. 1:</span>
+<span class="ln" data-line="extractswap">    swap(v[0], v[i]); heapify(v,i,0)</span>
+        </pre>
+        <div class="stats">
+          <div class="stat"><b data-role="stat-cmp">0</b><span>comparaciones</span></div>
+          <div class="stat"><b data-role="stat-swap">0</b><span>swaps</span></div>
+        </div>
+        <div class="legend">
+          <div class="item"><span class="sw" style="background:var(--accent)"></span>nodo i</div>
+          <div class="item"><span class="sw" style="background:var(--scan)"></span>hijo comparado</div>
+          <div class="item"><span class="sw" style="background:var(--danger)"></span>swap</div>
+          <div class="item"><span class="sw" style="background:var(--fixed)"></span>extraído (fijo)</div>
+        </div>
+      </div>
+      <div class="pane-stage">
+        <span class="phase-chip" data-role="phase">—</span>
+        <div class="stage">
+          <div class="row-cells" data-role="cells"></div>
+          <div class="tree-wrap" data-role="tree"></div>
+        </div>
+        <div class="narration"><span class="glyph"></span><span data-role="narration">—</span></div>
+        <div class="transport" data-role="transport"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== AVL ===================== -->
+  <section class="scene" id="scene-avl" data-scene="avl" hidden>
+    <div class="toolbar">
+      <span class="lede">Inserción palabra por palabra, con rebalanceo automático</span>
+      <form data-role="custom-form">
+        <input type="text" data-role="custom-input" placeholder="palabra1, palabra2, palabra3...">
+        <button type="submit" class="btn">Generar</button>
+      </form>
+      <button class="btn ghost" data-role="reset-default">usar ejemplo</button>
+    </div>
+    <div class="grid">
+      <div class="pane-code">
+        <h3>insertar() recursivo</h3>
+        <pre class="code" data-role="pseudocode">
+<span class="ln" data-line="create">si nodo == null: crear hoja, altura=1</span>
+<span class="ln" data-line="compare">si valor &lt; nodo.valor:</span>
+<span class="ln" data-line="goleft">  nodo.izq = insertar(nodo.izq, valor)</span>
+<span class="ln" data-line="goright">si no: nodo.der = insertar(nodo.der, valor)</span>
+<span class="ln" data-line="height">altura = 1+max(alt(izq),alt(der))</span>
+<span class="ln" data-line="height">balance = alt(izq) - alt(der)</span>
+<span class="ln" data-line="caseLL">si balance&gt;1 y valor&lt;izq.valor: rotarDerecha</span>
+<span class="ln" data-line="caseRR">si balance&lt;-1 y valor&gt;=der.valor: rotarIzquierda</span>
+<span class="ln" data-line="caseLR">si balance&gt;1 y valor&gt;=izq.valor: rotarIzq(izq)+rotarDer</span>
+<span class="ln" data-line="caseRL">si balance&lt;-1 y valor&lt;der.valor: rotarDer(der)+rotarIzq</span>
+        </pre>
+        <div class="stats">
+          <div class="stat"><b data-role="stat-cmp">0</b><span>comparaciones</span></div>
+          <div class="stat"><b data-role="stat-swap">0</b><span>rotaciones</span></div>
+        </div>
+        <div class="legend">
+          <div class="item"><span class="sw" style="background:var(--accent)"></span>nodo actual</div>
+          <div class="item"><span class="sw" style="background:var(--pivot)"></span>nodo nuevo</div>
+          <div class="item"><span class="sw" style="background:var(--danger)"></span>en rotación</div>
+        </div>
+      </div>
+      <div class="pane-stage">
+        <span class="phase-chip" data-role="phase">—</span>
+        <div class="stage">
+          <div class="tree-wrap" data-role="tree"></div>
+        </div>
+        <div class="narration"><span class="glyph"></span><span data-role="narration">—</span></div>
+        <div class="transport" data-role="transport"></div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="note">Arreglos pequeños a propósito: la lógica es idéntica a la de 100,000 palabras, solo que aquí la puedes seguir paso a paso.</footer>
+</div>
+
+<script>
+"use strict";
+
+/* ============================= Utilidades ============================= */
+function clamp(n,a,b){return Math.max(a,Math.min(b,n));}
+function parseWords(text, min, max){
+  const raw = text.split(/[,\n]+/).map(s=>s.trim().toLowerCase()).filter(Boolean);
+  const seen = new Set(); const out=[];
+  for (const w of raw){
+    if (!/^[a-zñáéíóúü]+$/i.test(w)) continue;
+    if (seen.has(w)) continue;
+    seen.add(w); out.push(w);
+  }
+  if (out.length < min) return {error:`Escribe al menos ${min} palabras distintas (solo letras).`};
+  if (out.length > max) return {error:`Máximo ${max} palabras para que el dibujo siga siendo legible.`};
+  return {words: out};
+}
+
+/* ============================= QuickSort trace ============================= */
+function generateQuickTrace(words){
+  const v = words.slice();
+  const steps = [];
+  const calls = [];
+  const fixed = new Set();
+  let cmp=0, swap=0;
+  function snap(extra){
+    steps.push(Object.assign({arr:v.slice(), calls:calls.map(c=>({...c})), fixed:[...fixed], cmp, swap}, extra));
+  }
+  snap({line:null, phase:'inicio', narration:`Arreglo inicial de ${v.length} palabras. Partición de Lomuto: el pivote siempre es el último elemento del rango.`, i:null,j:null,pivoteIdx:null,activeRange:null});
+
+  function partition(inicio, fin){
+    const pivoteIdx = fin, pivote = v[fin];
+    snap({line:'pivote', phase:`partition(${inicio}, ${fin})`, narration:`Elegimos el pivote: v[${fin}] = "${pivote}".`, i:inicio-1,j:null,pivoteIdx,activeRange:[inicio,fin]});
+    let i = inicio-1;
+    for (let j=inicio;j<fin;j++){
+      cmp++;
+      if (v[j] < pivote){
+        i++;
+        const didSwap = i!==j;
+        if (didSwap){ const t=v[i]; v[i]=v[j]; v[j]=t; swap++; }
+        snap({line:'swap', phase:`partition(${inicio}, ${fin})`, narration: didSwap
+            ? `"${v[i]}" &lt; pivote "${pivote}" → i++ (i=${i}) e intercambiamos v[${i}] con v[${j}].`
+            : `"${v[j]}" &lt; pivote "${pivote}" → i++ (i=${i}); i y j ya coinciden, no hay nada que mover.`,
+          i,j,pivoteIdx,activeRange:[inicio,fin], swapped: didSwap?[i,j]:null, cmp, swap});
+      } else {
+        snap({line:'ifcond', phase:`partition(${inicio}, ${fin})`, narration:`"${v[j]}" &gt;= pivote "${pivote}" → sigue del lado derecho, no se mueve.`, i,j,pivoteIdx,activeRange:[inicio,fin], cmp, swap});
+      }
+    }
+    { const t=v[i+1]; v[i+1]=v[fin]; v[fin]=t; swap++; }
+    fixed.add(i+1);
+    snap({line:'placepivot', phase:`partition(${inicio}, ${fin})`, narration:`Colocamos el pivote en su posición final: swap(v[${i+1}], v[${fin}]). "${v[i+1]}" queda fija.`, i:i+1,j:null,pivoteIdx:i+1,activeRange:[inicio,fin], swapped:[i+1,fin], cmp, swap});
+    return i+1;
+  }
+  function rec(inicio, fin){
+    calls.push({inicio,fin});
+    if (inicio>=fin){
+      if (inicio===fin) fixed.add(inicio);
+      snap({line:'base', phase:`quickSortRec(${inicio}, ${fin})`, narration: inicio===fin?`Rango [${inicio}, ${fin}] tiene un solo elemento: caso base, ya está ordenado.`:`Rango [${inicio}, ${fin}] vacío: caso base, nada que hacer.`, activeRange:[inicio,fin], i:null,j:null,pivoteIdx:null});
+      calls.pop();
+      return;
+    }
+    const p = partition(inicio, fin);
+    rec(inicio, p-1);
+    rec(p+1, fin);
+    calls.pop();
+  }
+  rec(0, v.length-1);
+  snap({line:null, phase:'terminado', narration:`Arreglo completamente ordenado con QuickSort.`, activeRange:null, i:null,j:null,pivoteIdx:null});
+  return steps;
+}
+
+/* ============================= HeapSort trace ============================= */
+function generateHeapTrace(words){
+  const v = words.slice();
+  const n0 = v.length;
+  const steps = [];
+  let cmp=0, swap=0;
+  function snap(extra){
+    steps.push(Object.assign({arr:v.slice(), cmp, swap}, extra));
+  }
+  snap({line:null, phase:'inicio', narration:`Arreglo inicial de ${n0} palabras. Fase 1: construir un heap máximo dentro del mismo arreglo.`, i:null,mayor:null,izq:null,der:null,swapped:null,heapBoundary:n0});
+
+  function heapify(n,i){
+    let mayor=i;
+    const izquierda=2*i+1, derecha=2*i+2;
+    snap({line:'enter', phase:`heapify(n=${n}, i=${i})`, narration:`heapify(v, ${n}, ${i}): comparamos v[${i}]="${v[i]}" con sus hijos.`, i,mayor,izq:izquierda<n?izquierda:null, der:derecha<n?derecha:null, heapBoundary:n});
+    if (izquierda<n){
+      cmp++;
+      if (v[izquierda] > v[mayor]){
+        mayor = izquierda;
+        snap({line:'cmpL', phase:`heapify(n=${n}, i=${i})`, narration:`Hijo izquierdo v[${izquierda}]="${v[izquierda]}" &gt; v[${i}]: mayor = ${izquierda}.`, i,mayor,izq:izquierda,der:derecha<n?derecha:null, heapBoundary:n, cmp, swap});
+      } else {
+        snap({line:'cmpL', phase:`heapify(n=${n}, i=${i})`, narration:`Hijo izquierdo v[${izquierda}]="${v[izquierda]}" no supera a v[${mayor}]="${v[mayor]}".`, i,mayor,izq:izquierda,der:derecha<n?derecha:null, heapBoundary:n, cmp, swap});
+      }
+    }
+    if (derecha<n){
+      cmp++;
+      if (v[derecha] > v[mayor]){
+        mayor = derecha;
+        snap({line:'cmpR', phase:`heapify(n=${n}, i=${i})`, narration:`Hijo derecho v[${derecha}]="${v[derecha]}" &gt; v[${mayor===derecha?i:mayor}]: mayor = ${derecha}.`, i,mayor,izq:izquierda<n?izquierda:null,der:derecha, heapBoundary:n, cmp, swap});
+      } else {
+        snap({line:'cmpR', phase:`heapify(n=${n}, i=${i})`, narration:`Hijo derecho v[${derecha}]="${v[derecha]}" no supera al mayor actual.`, i,mayor,izq:izquierda<n?izquierda:null,der:derecha, heapBoundary:n, cmp, swap});
+      }
+    }
+    if (mayor!==i){
+      const t=v[i]; v[i]=v[mayor]; v[mayor]=t; swap++;
+      snap({line:'swap', phase:`heapify(n=${n}, i=${i})`, narration:`v[${i}] y v[${mayor}] se intercambian ("${v[i]}" ⇄ "${v[mayor]}"). heapify baja recursivamente a ${mayor}.`, i,mayor,swapped:[i,mayor], heapBoundary:n, cmp, swap});
+      heapify(n,mayor);
+    } else {
+      snap({line:'ok', phase:`heapify(n=${n}, i=${i})`, narration:`v[${i}] ya es &gt;= que sus hijos: esta rama del heap queda válida.`, i,mayor, heapBoundary:n, cmp, swap});
+    }
+  }
+
+  snap({line:'buildstart', phase:'build-heap', narration:`Recorremos desde n/2-1 = ${Math.floor(n0/2)-1} hasta 0 llamando heapify en cada uno.`, heapBoundary:n0});
+  for (let i=Math.floor(n0/2)-1;i>=0;i--) heapify(n0,i);
+  snap({line:null, phase:'build-heap listo', narration:`Heap máximo construido: v[0]="${v[0]}" es la palabra "mayor" del conjunto.`, heapBoundary:n0});
+
+  snap({line:'extractswap', phase:'extracción', narration:`Fase 2: n-1 extracciones. En cada una, la raíz (máximo) se intercambia con el último elemento activo.`, heapBoundary:n0});
+  for (let i=n0-1;i>0;i--){
+    const t=v[0]; v[0]=v[i]; v[i]=t; swap++;
+    snap({line:'extractswap', phase:'extracción', narration:`swap(v[0], v[${i}]): "${v[i]}" queda fija en la posición ${i} (es la ${n0-i}-ésima más grande).`, swapped:[0,i], heapBoundary:i, cmp, swap});
+    heapify(i,0);
+  }
+  snap({line:null, phase:'terminado', narration:`Arreglo completamente ordenado con HeapSort.`, heapBoundary:0, cmp, swap});
+  return steps;
+}
+
+/* ============================= AVL trace ============================= */
+function generateAVLTrace(words){
+  let nextId=1;
+  let nodes={};
+  let root=null;
+  const steps=[];
+  let cmp=0, rot=0;
+  function cloneNodes(){ const c={}; for (const k in nodes) c[k]={...nodes[k]}; return c; }
+  function snap(extra){ steps.push(Object.assign({nodes:cloneNodes(), root, cmp, rot}, extra)); }
+  function altura(id){ return id==null?0:nodes[id].altura; }
+  function factorBalance(id){ return id==null?0:altura(nodes[id].izq)-altura(nodes[id].der); }
+
+  function rotarDerecha(id){
+    rot++;
+    const nodo=nodes[id], nuevaRaizId=nodo.izq, nuevaRaiz=nodes[nuevaRaizId];
+    const sub=nuevaRaiz.der;
+    nuevaRaiz.der=id; nodo.izq=sub;
+    nodo.altura=1+Math.max(altura(nodo.izq),altura(nodo.der));
+    nuevaRaiz.altura=1+Math.max(altura(nuevaRaiz.izq),altura(nuevaRaiz.der));
+    return nuevaRaizId;
+  }
+  function rotarIzquierda(id){
+    rot++;
+    const nodo=nodes[id], nuevaRaizId=nodo.der, nuevaRaiz=nodes[nuevaRaizId];
+    const sub=nuevaRaiz.izq;
+    nuevaRaiz.izq=id; nodo.der=sub;
+    nodo.altura=1+Math.max(altura(nodo.izq),altura(nodo.der));
+    nuevaRaiz.altura=1+Math.max(altura(nuevaRaiz.izq),altura(nuevaRaiz.der));
+    return nuevaRaizId;
+  }
+
+  function insertar(id, valor){
+    if (id==null){
+      const newId=nextId++;
+      nodes[newId]={id:newId, valor, izq:null, der:null, altura:1};
+      snap({line:'create', phase:`insertar("${valor}")`, narration:`Creamos un nodo hoja para "${valor}" (altura = 1).`, focus:newId, insertingValue:valor, newNode:newId});
+      return newId;
+    }
+    const nodo=nodes[id];
+    cmp++;
+    let goLeft;
+    if (valor < nodo.valor){
+      goLeft=true;
+      snap({line:'compare', phase:`insertar("${valor}")`, narration:`"${valor}" &lt; "${nodo.valor}" → bajamos a la izquierda.`, focus:id, insertingValue:valor, cmp, rot});
+      nodo.izq = insertar(nodo.izq, valor);
+    } else {
+      goLeft=false;
+      snap({line:'compare', phase:`insertar("${valor}")`, narration:`"${valor}" &gt;= "${nodo.valor}" → bajamos a la derecha.`, focus:id, insertingValue:valor, cmp, rot});
+      nodo.der = insertar(nodo.der, valor);
+    }
+    nodo.altura = 1+Math.max(altura(nodo.izq), altura(nodo.der));
+    const balance = factorBalance(id);
+    snap({line:'height', phase:`insertar("${valor}")`, narration:`Al volver a "${nodo.valor}": altura=${nodo.altura}, factorBalance=${balance}.`, focus:id, insertingValue:valor, cmp, rot});
+
+    if (balance>1 && valor<nodes[nodo.izq].valor){
+      snap({line:'caseLL', phase:'rebalanceo', narration:`Desbalance en "${nodo.valor}" (balance=${balance}) — caso Izquierda-Izquierda → rotarDerecha.`, focus:id, rotPair:[id,nodo.izq], insertingValue:valor});
+      const newId = rotarDerecha(id);
+      snap({line:'caseLL', phase:'rebalanceo', narration:`Rotación simple a la derecha lista: "${nodes[newId].valor}" sube.`, focus:newId, insertingValue:valor, cmp, rot});
+      return newId;
+    }
+    if (balance<-1 && valor>=nodes[nodo.der].valor){
+      snap({line:'caseRR', phase:'rebalanceo', narration:`Desbalance en "${nodo.valor}" (balance=${balance}) — caso Derecha-Derecha → rotarIzquierda.`, focus:id, rotPair:[id,nodo.der], insertingValue:valor});
+      const newId = rotarIzquierda(id);
+      snap({line:'caseRR', phase:'rebalanceo', narration:`Rotación simple a la izquierda lista: "${nodes[newId].valor}" sube.`, focus:newId, insertingValue:valor, cmp, rot});
+      return newId;
+    }
+    if (balance>1 && valor>=nodes[nodo.izq].valor){
+      snap({line:'caseLR', phase:'rebalanceo', narration:`Desbalance en "${nodo.valor}" (balance=${balance}) — caso Izquierda-Derecha → rotarIzquierda(hijo izq) y luego rotarDerecha.`, focus:id, rotPair:[id,nodo.izq], insertingValue:valor});
+      nodo.izq = rotarIzquierda(nodo.izq);
+      snap({line:'caseLR', phase:'rebalanceo', narration:`Primera rotación lista, ahora rotarDerecha en "${nodo.valor}".`, focus:id, insertingValue:valor, cmp, rot});
+      const newId = rotarDerecha(id);
+      snap({line:'caseLR', phase:'rebalanceo', narration:`Rotación doble completa: "${nodes[newId].valor}" sube.`, focus:newId, insertingValue:valor, cmp, rot});
+      return newId;
+    }
+    if (balance<-1 && valor<nodes[nodo.der].valor){
+      snap({line:'caseRL', phase:'rebalanceo', narration:`Desbalance en "${nodo.valor}" (balance=${balance}) — caso Derecha-Izquierda → rotarDerecha(hijo der) y luego rotarIzquierda.`, focus:id, rotPair:[id,nodo.der], insertingValue:valor});
+      nodo.der = rotarDerecha(nodo.der);
+      snap({line:'caseRL', phase:'rebalanceo', narration:`Primera rotación lista, ahora rotarIzquierda en "${nodo.valor}".`, focus:id, insertingValue:valor, cmp, rot});
+      const newId = rotarIzquierda(id);
+      snap({line:'caseRL', phase:'rebalanceo', narration:`Rotación doble completa: "${nodes[newId].valor}" sube.`, focus:newId, insertingValue:valor, cmp, rot});
+      return newId;
+    }
+    return id;
+  }
+
+  snap({line:null, phase:'inicio', narration:`Árbol vacío. Insertamos ${words.length} palabras, una por una, con rebalanceo automático tras cada inserción.`, insertingValue:null});
+  for (const w of words){
+    snap({line:null, phase:`insertar("${w}")`, narration:`Insertamos "${w}".`, insertingValue:w});
+    root = insertar(root, w);
+    snap({line:null, phase:`insertar("${w}") lista`, narration:`"${w}" insertada — el árbol sigue balanceado.`, insertingValue:null, cmp, rot});
+  }
+  snap({line:null, phase:'terminado', narration:`Las ${words.length} palabras están insertadas. Un recorrido inorder ahora las entrega en orden alfabético.`, insertingValue:null, showInorder:true});
+  return steps;
+}
+
+/* ============================= Layout AVL ============================= */
+function layoutAVL(nodesMap, root){
+  let x=0; const pos={}; let maxDepth=0;
+  function walk(id, depth){
+    if (id==null) return;
+    const nodo = nodesMap[id];
+    walk(nodo.izq, depth+1);
+    pos[id] = {x, y:depth};
+    x++;
+    maxDepth = Math.max(maxDepth, depth);
+    walk(nodo.der, depth+1);
+  }
+  walk(root, 0);
+  return {pos, count:x, maxDepth};
+}
+
+/* ============================= Escenas: motor genérico ============================= */
+function makeScene(cfg){
+  // cfg: {root, defaultWords, min, max, generate, render}
+  const el = cfg.root;
+  const state = { words: cfg.defaultWords.slice(), trace: [], idx: 0, playing:false, timer:null, speed:650 };
+
+  const els = {
+    cells: el.querySelector('[data-role="cells"]'),
+    tree: el.querySelector('[data-role="tree"]'),
+    narration: el.querySelector('[data-role="narration"]'),
+    phase: el.querySelector('[data-role="phase"]'),
+    statCmp: el.querySelector('[data-role="stat-cmp"]'),
+    statSwap: el.querySelector('[data-role="stat-swap"]'),
+    transport: el.querySelector('[data-role="transport"]'),
+    pseudocode: el.querySelectorAll('[data-role="pseudocode"] .ln'),
+    customForm: el.querySelector('[data-role="custom-form"]'),
+    customInput: el.querySelector('[data-role="custom-input"]'),
+    resetBtn: el.querySelector('[data-role="reset-default"]'),
+  };
+
+  els.transport.innerHTML = `
+    <button class="tbtn" data-act="first" title="Ir al inicio">⏮</button>
+    <button class="tbtn" data-act="prev" title="Paso anterior">◀</button>
+    <button class="tbtn play" data-act="play" title="Reproducir / pausar">▶</button>
+    <button class="tbtn" data-act="next" title="Paso siguiente">▶</button>
+    <button class="tbtn" data-act="last" title="Ir al final">⏭</button>
+    <div class="progress">
+      <input type="range" data-role="scrub" min="0" max="0" value="0">
+      <span class="count" data-role="count">Paso 0 / 0</span>
+    </div>
+    <label class="speed">velocidad
+      <input type="range" data-role="speed" min="150" max="1400" step="50" value="650">
+    </label>
+  `;
+  const scrub = els.transport.querySelector('[data-role="scrub"]');
+  const count = els.transport.querySelector('[data-role="count"]');
+  const speedInput = els.transport.querySelector('[data-role="speed"]');
+  const playBtn = els.transport.querySelector('[data-act="play"]');
+
+  function buildTrace(words){
+    stop();
+    state.words = words;
+    state.trace = cfg.generate(words);
+    state.idx = 0;
+    scrub.max = String(state.trace.length-1);
+    scrub.value = "0";
+    renderCurrent();
+  }
+
+  function renderCurrent(){
+    const step = state.trace[state.idx];
+    if (!step) return;
+    els.narration.innerHTML = step.narration || "—";
+    els.phase.textContent = step.phase || "—";
+    els.statCmp.textContent = (step.cmp ?? 0);
+    els.statSwap.textContent = (step.swap ?? step.rot ?? 0);
+    scrub.value = String(state.idx);
+    count.textContent = `Paso ${state.idx+1} / ${state.trace.length}`;
+    els.pseudocode.forEach(span=>{
+      span.classList.toggle('active', !!step.line && span.dataset.line===step.line);
+    });
+    cfg.render(step, els, state.words);
+  }
+
+  function go(i){ state.idx = clamp(i, 0, state.trace.length-1); renderCurrent(); }
+  function stop(){ state.playing=false; playBtn.textContent='▶'; if (state.timer){ clearInterval(state.timer); state.timer=null; } }
+  function play(){
+    if (state.idx >= state.trace.length-1) go(0);
+    state.playing=true; playBtn.textContent='⏸';
+    state.timer = setInterval(()=>{
+      if (state.idx >= state.trace.length-1){ stop(); return; }
+      go(state.idx+1);
+    }, state.speed);
+  }
+
+  els.transport.addEventListener('click', e=>{
+    const act = e.target.closest('[data-act]')?.dataset.act;
+    if (!act) return;
+    if (act==='first') { stop(); go(0); }
+    else if (act==='prev') { stop(); go(state.idx-1); }
+    else if (act==='next') { stop(); go(state.idx+1); }
+    else if (act==='last') { stop(); go(state.trace.length-1); }
+    else if (act==='play') { state.playing ? stop() : play(); }
+  });
+  scrub.addEventListener('input', ()=>{ stop(); go(parseInt(scrub.value,10)); });
+  speedInput.addEventListener('input', ()=>{
+    state.speed = 1550 - parseInt(speedInput.value,10);
+    if (state.playing){ stop(); play(); }
+  });
+
+  let warnEl = null;
+  els.customForm.addEventListener('submit', e=>{
+    e.preventDefault();
+    const res = parseWords(els.customInput.value, cfg.min, cfg.max);
+    if (warnEl) { warnEl.remove(); warnEl=null; }
+    if (res.error){
+      warnEl = document.createElement('span');
+      warnEl.className='warn'; warnEl.textContent=res.error;
+      els.customForm.after(warnEl);
+      return;
+    }
+    buildTrace(res.words);
+  });
+  els.resetBtn.addEventListener('click', ()=>{
+    els.customInput.value='';
+    if (warnEl) { warnEl.remove(); warnEl=null; }
+    buildTrace(cfg.defaultWords.slice());
+  });
+
+  buildTrace(cfg.defaultWords.slice());
+  return { stop };
+}
+
+/* ============================= Render: QuickSort ============================= */
+function renderQuickCells(step, els){
+  const { arr, i, j, pivoteIdx, activeRange, fixed, swapped } = step;
+  els.cells.innerHTML='';
+  arr.forEach((word, idx)=>{
+    const cell = document.createElement('div');
+    cell.className='cell';
+    if (fixed && fixed.includes(idx)) cell.classList.add('fixed');
+    if (activeRange && (idx<activeRange[0] || idx>activeRange[1])) cell.classList.add('outside');
+    if (idx===pivoteIdx) cell.classList.add('is-pivot');
+    if (swapped && swapped.includes(idx)) cell.classList.add('is-swap');
+    cell.textContent = word;
+    const idxLbl = document.createElement('span'); idxLbl.className='idx'; idxLbl.textContent=idx;
+    cell.appendChild(idxLbl);
+    if (idx===pivoteIdx){ const b=document.createElement('span'); b.className='badge b-piv'; b.textContent='pivote'; cell.appendChild(b); }
+    if (idx===i){ const b=document.createElement('span'); b.className='badge b-i'; b.textContent='i'; cell.appendChild(b); }
+    if (idx===j){ const b=document.createElement('span'); b.className='badge b-j'; b.textContent='j'; cell.appendChild(b); }
+    els.cells.appendChild(cell);
+  });
+}
+
+/* ============================= Render: HeapSort (cells + tree) ============================= */
+function heapTreeSVG(arr, heapBoundary, opts){
+  const { i, mayor, izq, der, swapped } = opts;
+  const n = heapBoundary;
+  if (n<=0) return '<svg class="tree" viewBox="0 0 10 10"></svg>';
+  const depthOf = idx => Math.floor(Math.log2(idx+1));
+  const maxDepth = depthOf(n-1);
+  const boxW=58, boxH=32, rowH=58, pad=30;
+  const rows = maxDepth+1;
+  const width = Math.pow(2,maxDepth)*(boxW+16)+pad*2;
+  const height = rows*rowH+pad*1.6;
+  function centerX(idx){
+    const d = depthOf(idx);
+    const posInRow = idx+1-Math.pow(2,d);
+    const slots = Math.pow(2,d);
+    return pad + (posInRow+0.5)/slots*(width-pad*2);
+  }
+  function centerY(idx){ return pad + depthOf(idx)*rowH; }
+  let edges='', nodes='';
+  for (let idx=0; idx<n; idx++){
+    const parent = Math.floor((idx-1)/2);
+    if (idx>0){
+      edges += `<line class="edge" x1="${centerX(parent)}" y1="${centerY(parent)+boxH/2}" x2="${centerX(idx)}" y2="${centerY(idx)-boxH/2}"/>`;
+    }
+    let cls='node';
+    if (idx===i) cls+=' focus';
+    else if (idx===izq || idx===der) cls+=' child';
+    if (swapped && swapped.includes(idx)) cls=cls.replace('focus','').replace('child','')+' swap';
+    const cx=centerX(idx), cy=centerY(idx);
+    const label = arr[idx].length>8 ? arr[idx].slice(0,7)+'…' : arr[idx];
+    nodes += `<g class="${cls}"><rect x="${cx-boxW/2}" y="${cy-boxH/2}" width="${boxW}" height="${boxH}" rx="7"/>`
+           + `<text class="val" x="${cx}" y="${cy+4}" text-anchor="middle">${label}</text>`
+           + `<text class="meta" x="${cx}" y="${cy-boxH/2-4}" text-anchor="middle">${idx}</text></g>`;
+  }
+  return `<svg class="tree" viewBox="0 0 ${width} ${height}" role="img" aria-label="El heap visto como árbol binario">${edges}${nodes}</svg>`;
+}
+function renderHeapCells(step, els){
+  const { arr, heapBoundary, i, mayor, izq, der, swapped } = step;
+  els.cells.innerHTML='';
+  arr.forEach((word, idx)=>{
+    const cell = document.createElement('div');
+    cell.className='cell';
+    if (idx>=heapBoundary) cell.classList.add('fixed');
+    if (idx===i) cell.classList.add('is-pivot');
+    if (swapped && swapped.includes(idx)) cell.classList.add('is-swap');
+    cell.textContent = word;
+    const idxLbl = document.createElement('span'); idxLbl.className='idx'; idxLbl.textContent=idx;
+    cell.appendChild(idxLbl);
+    if (idx===izq || idx===der){ const b=document.createElement('span'); b.className='badge b-j'; b.textContent=idx===izq?'izq':'der'; cell.appendChild(b); }
+    els.cells.appendChild(cell);
+  });
+  els.tree.innerHTML = heapTreeSVG(arr, heapBoundary, {i,mayor,izq,der,swapped});
+}
+
+/* ============================= Render: AVL ============================= */
+function avlTreeSVG(nodesMap, root, opts){
+  const { focus, newNode, rotPair } = opts;
+  if (root==null) return '<svg class="tree" viewBox="0 0 10 10"></svg>';
+  const { pos, count, maxDepth } = layoutAVL(nodesMap, root);
+  const boxW=68, boxH=34, colW=84, rowH=64, pad=34;
+  const width = Math.max(count*colW, 140)+pad*2;
+  const height = (maxDepth+1)*rowH+pad*1.6;
+  function cx(id){ return pad + (pos[id].x+0.5)*colW; }
+  function cy(id){ return pad + pos[id].y*rowH; }
+  let edges='', nodes='';
+  for (const k in nodesMap){
+    const id = Number(k), nodo = nodesMap[k];
+    if (nodo.izq!=null && pos[nodo.izq]) edges += `<line class="edge" x1="${cx(id)}" y1="${cy(id)+boxH/2}" x2="${cx(nodo.izq)}" y2="${cy(nodo.izq)-boxH/2}"/>`;
+    if (nodo.der!=null && pos[nodo.der]) edges += `<line class="edge" x1="${cx(id)}" y1="${cy(id)+boxH/2}" x2="${cx(nodo.der)}" y2="${cy(nodo.der)-boxH/2}"/>`;
+  }
+  for (const k in nodesMap){
+    const id = Number(k), nodo = nodesMap[k];
+    if (!pos[id]) continue;
+    let cls='node';
+    if (rotPair && rotPair.includes(id)) cls+=' swap';
+    else if (id===focus) cls+=' focus';
+    if (id===newNode) cls+=' new';
+    const label = nodo.valor.length>9 ? nodo.valor.slice(0,8)+'…' : nodo.valor;
+    const balVal = (id2=>{
+      const izqA = nodo.izq!=null && nodesMap[nodo.izq] ? nodesMap[nodo.izq].altura : 0;
+      const derA = nodo.der!=null && nodesMap[nodo.der] ? nodesMap[nodo.der].altura : 0;
+      return izqA-derA;
+    })();
+    nodes += `<g class="${cls}"><rect x="${cx(id)-boxW/2}" y="${cy(id)-boxH/2}" width="${boxW}" height="${boxH}" rx="8"/>`
+           + `<text class="val" x="${cx(id)}" y="${cy(id)+4}" text-anchor="middle">${label}</text>`
+           + `<text class="meta" x="${cx(id)}" y="${cy(id)+boxH/2+11}" text-anchor="middle">h=${nodo.altura} b=${balVal}</text></g>`;
+  }
+  return `<svg class="tree" viewBox="0 0 ${width} ${height}" role="img" aria-label="Árbol AVL en construcción">${edges}${nodes}</svg>`;
+}
+function renderAVL(step, els){
+  els.tree.innerHTML = avlTreeSVG(step.nodes, step.root, {focus:step.focus, newNode:step.newNode, rotPair:step.rotPair});
+}
+
+/* ============================= Init ============================= */
+document.addEventListener('DOMContentLoaded', ()=>{
+  const scenes = {};
+  scenes.quick = makeScene({
+    root: document.getElementById('scene-quick'),
+    defaultWords: ["nube","zorro","arbol","perro","mesa","luz","casa","rio","sol","gato"],
+    min:4, max:14,
+    generate: generateQuickTrace,
+    render: (step, els)=> renderQuickCells(step, els),
+  });
+  scenes.heap = makeScene({
+    root: document.getElementById('scene-heap'),
+    defaultWords: ["pluma","tigre","fuego","hoja","nieve","vela","pan","mar","luna","pez"],
+    min:4, max:14,
+    generate: generateHeapTrace,
+    render: (step, els)=> renderHeapCells(step, els),
+  });
+  scenes.avl = makeScene({
+    root: document.getElementById('scene-avl'),
+    defaultWords: ["mango","nube","oso","luna","kiwi","queso","perla","jazmin","rio"],
+    min:3, max:12,
+    generate: generateAVLTrace,
+    render: (step, els)=> renderAVL(step, els),
+  });
+
+  const tabs = document.querySelectorAll('nav.tabs button');
+  tabs.forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      tabs.forEach(b=>b.setAttribute('aria-selected', String(b===btn)));
+      document.querySelectorAll('.scene').forEach(s=>{
+        const show = s.dataset.scene===btn.dataset.scene;
+        s.hidden = !show;
+      });
+      Object.values(scenes).forEach(sc=>sc.stop());
+    });
+  });
+});
+</script>
