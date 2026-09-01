@@ -2,7 +2,7 @@
     int partition(std::vector<std::string>& v, int inicio, int fin) // Partiition reorganiza v, de inicio a fin , alrededor de un piivote:,todo lo menor queda a la izquierda,todo mayor a la derecha y devuelve la posicion de donde quedo el pivote
     {
         std::string pivote= v[fin]; // Hacemos una copia del ultmo elemento del rango actual [inicio,fin] como pivote de referencia, se copia,no lo referenciamos, pa que no cambie si  luego movemos elementos
-        int i = inicio-1; // i marca el limite de la región de elemtnos ya confirmados menores al piivote,arranca en iinicio-1 porque esa parte empieza vacia
+        int i = inicio-1; // i marca el limite de la región de elemtnos ya confirmados menores al pivote,arranca en iinicio-1 porque esa parte empieza vacia
 
         for (int j = inicio; j < fin; j++) { //Creamos un bucle for con la variable j, j recorre cada elemento ,justo antes de que llegue a fin porq, justo en fin es donde quedo guardado el pivote
             if (v[j] < pivote) { //Verifica si v[j] pertenece a la región de menores al pivote,si es el caso, hay que moverlo dentro de nuestra región

@@ -21,7 +21,7 @@ void heapify(std::vector<std::string>& v, int n, int i) { //Acomoda el valor de 
 void heapSort(std::vector<std::string>& v) { //Orsdena el vector completo en 2 fases,construye un max-hheap luego extrae el maximo para armar el orden
     int n = static_cast<int>(v.size()); //Convierte el tamaño del vector a int, igual q en quickSort, para evitar posibles unsigned
 
-    // Fase 1: construir el max-heap. Se arranca en n/2-1 porque
+    // Fase 1: construen ir el max-heap. Se arranca en n/2-1 porque
     // todo lo que está después de ese índice ya es hoja
     for (int i = n / 2 - 1; i >= 0; i--) { // Recorre los nodos internos, de atras hacia adelante hasta llegar a la raiz
         heapify(v, n, i);// Arregla el heap en el nodo i, asumiendo q sus hijos ya son heaps validos

@@ -80,6 +80,18 @@
   .btn.ghost:hover{color:var(--ink);text-decoration:underline;}
   .warn{font-size:12px;color:var(--danger);}
 
+  .reorder-row{padding:11px 18px 14px;border-bottom:1px solid var(--border);display:flex;flex-wrap:wrap;align-items:center;gap:10px 12px;}
+  .reorder-row .hint{font-size:11px;color:var(--ink-dim);flex:none;}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;}
+  .chip{
+    font-family:var(--font-mono);font-size:12px;padding:5px 11px;border-radius:999px;
+    border:1px dashed var(--border-strong);background:var(--surface);color:var(--ink);
+    cursor:grab;user-select:none;transition:opacity .15s,border-color .15s,transform .12s,background-color .15s;
+  }
+  .chip:active{cursor:grabbing;}
+  .chip.dragging{opacity:.3;}
+  .chip.drag-over{border-color:var(--accent);border-style:solid;transform:scale(1.08);background:var(--surface-2);}
+
   .grid{display:grid;grid-template-columns:300px 1fr;gap:0;}
   @media (max-width:820px){.grid{grid-template-columns:1fr;}}
 
@@ -146,6 +158,8 @@
   }
   .narration .glyph{flex:none;width:7px;height:7px;border-radius:50%;background:var(--accent);margin-top:6px;}
 
+  .empty-hint{color:var(--ink-dim);font-size:13px;text-align:center;padding:36px 20px;border:1px dashed var(--border);border-radius:10px;}
+
   .transport{display:flex;align-items:center;gap:10px;margin-top:16px;flex-wrap:wrap;}
   .transport .tbtn{
     width:34px;height:34px;border-radius:8px;border:1px solid var(--border-strong);background:var(--surface);
@@ -188,6 +202,10 @@
         <button type="submit" class="btn">Generar</button>
       </form>
       <button class="btn ghost" data-role="reset-default">usar ejemplo</button>
+    </div>
+    <div class="reorder-row">
+      <span class="hint">arrastra las palabras para cambiar el orden inicial:</span>
+      <div class="chips" data-role="chips"></div>
     </div>
     <div class="grid">
       <div class="pane-code">
@@ -240,6 +258,10 @@
       </form>
       <button class="btn ghost" data-role="reset-default">usar ejemplo</button>
     </div>
+    <div class="reorder-row">
+      <span class="hint">arrastra las palabras para cambiar el orden inicial:</span>
+      <div class="chips" data-role="chips"></div>
+    </div>
     <div class="grid">
       <div class="pane-code">
         <h3>heapify() / heapSort()</h3>
@@ -289,6 +311,10 @@
         <button type="submit" class="btn">Generar</button>
       </form>
       <button class="btn ghost" data-role="reset-default">usar ejemplo</button>
+    </div>
+    <div class="reorder-row">
+      <span class="hint">arrastra las palabras para cambiar el orden de inserción:</span>
+      <div class="chips" data-role="chips"></div>
     </div>
     <div class="grid">
       <div class="pane-code">
@@ -581,6 +607,7 @@ function makeScene(cfg){
     statCmp: el.querySelector('[data-role="stat-cmp"]'),
     statSwap: el.querySelector('[data-role="stat-swap"]'),
     transport: el.querySelector('[data-role="transport"]'),
+    chips: el.querySelector('[data-role="chips"]'),
     pseudocode: el.querySelectorAll('[data-role="pseudocode"] .ln'),
     customForm: el.querySelector('[data-role="custom-form"]'),
     customInput: el.querySelector('[data-role="custom-input"]'),
@@ -606,9 +633,46 @@ function makeScene(cfg){
   const speedInput = els.transport.querySelector('[data-role="speed"]');
   const playBtn = els.transport.querySelector('[data-act="play"]');
 
+  function renderChips(){
+    if (!els.chips) return;
+    els.chips.innerHTML = '';
+    state.words.forEach((w, idx)=>{
+      const chip = document.createElement('span');
+      chip.className = 'chip';
+      chip.draggable = true;
+      chip.textContent = w;
+      chip.dataset.idx = String(idx);
+      chip.title = 'Arrastra para mover';
+      chip.addEventListener('dragstart', e=>{
+        chip.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', String(idx));
+      });
+      chip.addEventListener('dragend', ()=>{
+        chip.classList.remove('dragging');
+        els.chips.querySelectorAll('.chip').forEach(c=>c.classList.remove('drag-over'));
+      });
+      chip.addEventListener('dragover', e=>{ e.preventDefault(); chip.classList.add('drag-over'); });
+      chip.addEventListener('dragleave', ()=>{ chip.classList.remove('drag-over'); });
+      chip.addEventListener('drop', e=>{
+        e.preventDefault();
+        chip.classList.remove('drag-over');
+        const from = parseInt(e.dataTransfer.getData('text/plain'), 10);
+        const to = idx;
+        if (isNaN(from) || from===to) return;
+        const reordered = state.words.slice();
+        const [moved] = reordered.splice(from, 1);
+        reordered.splice(to, 0, moved);
+        buildTrace(reordered);
+      });
+      els.chips.appendChild(chip);
+    });
+  }
+
   function buildTrace(words){
     stop();
     state.words = words;
+    renderChips();
     state.trace = cfg.generate(words);
     state.idx = 0;
     scrub.max = String(state.trace.length-1);
@@ -752,6 +816,10 @@ function renderHeapCells(step, els){
     if (idx===izq || idx===der){ const b=document.createElement('span'); b.className='badge b-j'; b.textContent=idx===izq?'izq':'der'; cell.appendChild(b); }
     els.cells.appendChild(cell);
   });
+  if (heapBoundary<=0){
+    els.tree.innerHTML = `<div class="empty-hint">Heap vacío: el arreglo ya quedó completamente ordenado.</div>`;
+    return;
+  }
   els.tree.innerHTML = heapTreeSVG(arr, heapBoundary, {i,mayor,izq,der,swapped});
 }
 
@@ -791,6 +859,10 @@ function avlTreeSVG(nodesMap, root, opts){
   return `<svg class="tree" viewBox="0 0 ${width} ${height}" role="img" aria-label="Árbol AVL en construcción">${edges}${nodes}</svg>`;
 }
 function renderAVL(step, els){
+  if (step.root==null){
+    els.tree.innerHTML = `<div class="empty-hint">Árbol vacío todavía — pulsa ▶ o "siguiente paso" para insertar la primera palabra.</div>`;
+    return;
+  }
   els.tree.innerHTML = avlTreeSVG(step.nodes, step.root, {focus:step.focus, newNode:step.newNode, rotPair:step.rotPair});
 }
 

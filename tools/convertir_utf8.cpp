@@ -9,10 +9,10 @@ int main() {
     std::string bytesCrudos((std::istreambuf_iterator<char>(archivo)), std::istreambuf_iterator<char>()); // esto lee,todo el archivo de un golpe,byte por byte,sin decir nada
 
     //Ahora, vamos a decodificar esos bytes a texto real
-    // Primero verificiamos el BOM
+    // Primero verificiamos la marca de orden de bits (BOM)
     unsigned char b0 = bytesCrudos[0]; // Primer byte del archivo
     unsigned char b1 = bytesCrudos[1]; // Segundo byte del archivo
-    if (b0 !=0xFF || b1 != 0xFE) { // 0xFF, 0xFE es el BOm de UTF-16, si no coincide no es el archivo q esperabamos
+    if (b0 !=0xFF || b1 != 0xFE) { // 0xFF, 0xFE es la marca de orden de bits de UTF-16, si no coincide no es el archivo q esperabamos
         std::cerr << "El archivo no tiene BOM" << std::endl; // Avisa el error por consola
         return 1; // Termina el programa con código de error
     }
